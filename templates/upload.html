@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload & Train • AI Text Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-slate-100"
+  >
+    <header class="py-10">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-semibold tracking-tight">
+            <span class="text-indigo-400">Upload & Train</span>
+            <span class="text-slate-200"> · AI Text Detection</span>
+          </h1>
+          <nav>
+            <a
+              href="/"
+              class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
+              >Home</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 pb-16">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div
+          class="backdrop-blur supports-[backdrop-filter]:bg-white/5 bg-white/10 rounded-2xl p-6 ring-1 ring-white/10 shadow-xl"
+        >
+          <h2 class="text-lg font-semibold mb-4">Upload training CSV</h2>
+          <p class="text-sm text-slate-300 mb-3">
+            CSV may include columns <code class="text-indigo-300">text</code>,
+            <code class="text-indigo-300">label</code>
+            or be headerless two+ columns (last column is label 0/1, the rest
+            are joined as text).
+          </p>
+
+          <form id="uploadForm" class="space-y-4">
+            <input
+              id="csvFile"
+              type="file"
+              accept=".csv"
+              class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+            />
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition"
+            >
+              Upload
+            </button>
+            <span id="status" class="text-sm text-slate-400"></span>
+          </form>
+
+          <div class="mt-6">
+            <div class="w-full bg-white/10 rounded-full h-2">
+              <div
+                id="progressBar"
+                class="bg-indigo-500 h-2 rounded-full transition-all duration-300"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="backdrop-blur supports-[backdrop-filter]:bg-white/5 bg-white/10 rounded-2xl p-6 ring-1 ring-white/10 shadow-xl"
+        >
+          <h2 class="text-lg font-semibold mb-4">Sample Preview</h2>
+          <div id="preview" class="text-sm text-slate-300">
+            No file uploaded yet.
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <div
+          class="backdrop-blur supports-[backdrop-filter]:bg-white/5 bg-white/10 rounded-2xl p-6 ring-1 ring-white/10 shadow-xl"
+        >
+          <h2 class="text-lg font-semibold mb-4">Training Result</h2>
+          <div id="trainResult" class="text-sm text-slate-300">
+            Training will start automatically after a successful upload.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById("uploadForm");
+      const fileInput = document.getElementById("csvFile");
+      const statusEl = document.getElementById("status");
+      const progress = document.getElementById("progressBar");
+      const preview = document.getElementById("preview");
+      const trainResult = document.getElementById("trainResult");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!fileInput.files.length) {
+          setStatus("Please choose a CSV file", true);
+          return;
+        }
+        const file = fileInput.files[0];
+        const data = new FormData();
+        data.append("file", file);
+
+        try {
+          setStatus("Uploading…");
+          progress.style.width = "20%";
+          const res = await fetch("/upload-csv", {
+            method: "POST",
+            body: data,
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || "Upload failed");
+          setStatus("Uploaded ✓", false, true);
+          progress.style.width = "100%";
+          showPreview(json);
+
+          // Auto-train after successful upload
+          trainResult.textContent = "Training…";
+          const trainRes = await fetch("/train", { method: "POST" });
+          const trainJson = await trainRes.json();
+          if (!trainRes.ok)
+            throw new Error(trainJson.error || "Training failed");
+          showTrainResult(trainJson);
+        } catch (err) {
+          setStatus(err.message, true);
+          progress.style.width = "0%";
+          trainResult.textContent = "Training skipped due to upload error.";
+        }
+      });
+
+      function setStatus(msg, isError = false, isSuccess = false) {
+        statusEl.textContent = msg;
+        statusEl.className =
+          "text-sm " +
+          (isError
+            ? "text-rose-400"
+            : isSuccess
+            ? "text-emerald-400"
+            : "text-slate-400");
+      }
+
+      function showPreview(data) {
+        const rows = data.sample_data || [];
+        if (!rows.length) {
+          preview.textContent = "No preview available.";
+          return;
+        }
+        const headers = Object.keys(rows[0]);
+        const table = document.createElement("table");
+        table.className = "w-full text-sm table-auto border-collapse";
+        table.innerHTML = `
+        <thead>
+          <tr>
+            ${headers
+              .map(
+                (h) =>
+                  `<th class="text-left p-2 border-b border-white/10">${h}</th>`
+              )
+              .join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (r) => `
+            <tr>
+              ${headers
+                .map(
+                  (h) =>
+                    `<td class="p-2 align-top border-b border-white/10">${String(
+                      r[h]
+                    ).slice(0, 160)}</td>`
+                )
+                .join("")}
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      `;
+        preview.innerHTML = "";
+        preview.appendChild(table);
+      }
+
+      function showTrainResult(data) {
+        const acc =
+          data.accuracy != null ? (data.accuracy * 100).toFixed(2) + "%" : "—";
+        const html = `
+        <div class="space-y-1">
+          <div>Message: <span class="text-emerald-400">${
+            data.message || "Trained"
+          }</span></div>
+          <div>Accuracy: ${acc}</div>
+          <div>Dataset Size: ${data.dataset_size ?? "—"}</div>
+          <div>Training Samples: ${data.training_samples ?? "—"}</div>
+          <div>Test Samples: ${data.test_samples ?? "—"}</div>
+          <div>Dataset Used: ${data.dataset_used ?? "—"}</div>
+        </div>
+      `;
+        trainResult.innerHTML = html;
+      }
+    </script>
+  </body>
+</html>

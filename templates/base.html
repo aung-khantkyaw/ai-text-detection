@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}AI Text Detection API{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body
+    class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-slate-100"
+  >
+    <header class="py-10">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-semibold tracking-tight">
+            <a href="/" class="text-indigo-400">Laziestant's Projects</a>
+            <span class="text-slate-200"> · AI Text Detection API</span>
+          </h1>
+        </div>
+      </div>
+    </header>
+    <main class="container mx-auto px-4 pb-16">
+      {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

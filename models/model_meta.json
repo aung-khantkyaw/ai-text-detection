@@ -1,0 +1,31 @@
+{
+  "trained": true,
+  "accuracy": 0.9238,
+  "training_date": "2025-08-17 10:13:13",
+  "dataset_size": 17060,
+  "label_mapping": {
+    "0": 0,
+    "1": 1
+  },
+  "labels": [
+    "0",
+    "1"
+  ],
+  "training_samples": 13648,
+  "test_samples": 3412,
+  "dataset_used": "uploads\\Training_Essay_Data.csv",
+  "vectorizer": {
+    "type": "TfidfVectorizer",
+    "ngram_range": [
+      1,
+      2
+    ],
+    "max_features": 8000,
+    "norm": "l1"
+  },
+  "model": "LogisticRegression",
+  "model_params": {
+    "class_weight": "balanced",
+    "solver": "liblinear"
+  }
+}

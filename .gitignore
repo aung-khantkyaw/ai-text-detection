@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+
+# Models & uploads
+models/*.pkl
+models/latest_dataset.txt
+uploads/
+
+# VS Code
+.vscode/
